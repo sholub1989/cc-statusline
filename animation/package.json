@@ -1,0 +1,24 @@
+{
+  "name": "cc-statusline-animation",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts InstallGuide out.mp4",
+    "render:dataflow": "remotion render src/index.ts DataFlow out-dataflow.mp4",
+    "build": "remotion render src/index.ts InstallGuide out.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.261",
+    "@remotion/google-fonts": "4.0.261",
+    "@remotion/transitions": "4.0.261",
+    "react": "^19",
+    "react-dom": "^19",
+    "remotion": "4.0.261",
+    "roughjs": "^4.6.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}
