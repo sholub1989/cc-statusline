@@ -80,8 +80,9 @@ fi
 # Line 1
 echo -e "${CYAN}${MODEL}${R} ${DIM}|${R} ${PROJECT_PATH} ${DIM}|${R} ${MAGENTA}${BRANCH}${R} ${DIM}|${R} ${GREEN}+${ADDED}${R} ${RED}-${REMOVED}${R} ${DIM}|${R} Ctx: ${CYAN}${CTX_PERCENT}%${R} ${DIM}(${CTX_FMT})${R} ${DIM}|${R} Cost: ${CYAN}\$${COST_FMT}${R}"
 
-# Line 2: usage data from socket
-LINE2=$(python3 -c "
+# Line 2: usage data from socket (requires Chrome extension)
+if [ ! -f "$STATUSLINE_DIR/.no-chrome-extension" ]; then
+    LINE2=$(python3 -c "
 import json, socket, datetime
 
 SOCK = '/tmp/claude-usage.sock'
@@ -130,6 +131,7 @@ else:
 
 print(f'{fh_str} {DIM}|{R} {sd_str}')
 " 2>/dev/null)
-if [ -n "$LINE2" ]; then
-    echo -e "$LINE2"
+    if [ -n "$LINE2" ]; then
+        echo -e "$LINE2"
+    fi
 fi
