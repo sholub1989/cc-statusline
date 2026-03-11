@@ -1,6 +1,8 @@
 const HOST_NAME = "com.claude.usage";
 let port = null;
 let orgId = null;
+let retryDelay = 1000; // ms; doubles on each failure, resets when a message arrives
+let retryTimer = null;
 
 async function ensureConnected() {
   if (!orgId) {
@@ -24,11 +26,18 @@ async function ensureConnected() {
   if (!port) {
     port = chrome.runtime.connectNative(HOST_NAME);
     port.onMessage.addListener((msg) => {
+      retryDelay = 1000; // connection is healthy — reset backoff
       if (msg.action === "fetch") fetchUsage();
     });
     port.onDisconnect.addListener(() => {
       console.error("Disconnected:", chrome.runtime.lastError?.message);
       port = null;
+      // Schedule reconnect with exponential backoff (1s → 2s → 4s … capped at 30s).
+      // Handles transient failures: Chrome's NMH registry not yet ready at startup,
+      // host process crash, or MV3 service-worker lifecycle restarts.
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => { retryTimer = null; ensureConnected(); }, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, 30_000);
     });
   }
   return true;
