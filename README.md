@@ -25,7 +25,7 @@ Fetches are **debounced** (max once per 5 seconds). During streaming responses, 
 - `jq` on `$PATH`
 
 **Full install (with usage data)**
-- Google Chrome — logged in to [claude.ai](https://claude.ai) and able to view [claude.ai/settings/usage](https://claude.ai/settings/usage)
+- Google Chrome — the extension must be installed in the **same browser profile** where you are logged into claude.ai and can view [claude.ai/settings/usage](https://claude.ai/settings/usage). It works by using that browser's existing authenticated session (cookies) — if you can see the usage page in that browser, the extension can access the same data
 - `python3` on `$PATH`
 
 ## Setup
@@ -50,6 +50,9 @@ open ~/.claude/extensions/cc-statusline
 
 1. Open `chrome://extensions` and enable **Developer mode** (top-right toggle)
 2. Drag the `cc-statusline` folder from Finder onto the `chrome://extensions` page
+
+> **Important:** Load the extension into the **same Chrome profile** where you are logged into claude.ai. The extension uses that browser's existing authenticated session — no separate login needed.
+
 3. Open a Claude Code session — you should see the statusline
 
 > The Chrome extension loading steps above apply to the full install only.
@@ -77,7 +80,7 @@ The installer copies extension files to `~/.claude/extensions/cc-statusline/` an
 - Check `chrome://extensions` for errors on the extension
 - Open the service worker console and look for error messages
 - Verify `ls /tmp/claude-usage.sock` exists (created when the extension loads)
-- Make sure you're logged in to claude.ai in Chrome
+- Make sure the extension is installed in the **same Chrome profile** where you're logged into claude.ai — if you can view [claude.ai/settings/usage](https://claude.ai/settings/usage) in that browser, the extension can access the same data
 
 **"Native host disconnected" in service worker console**
 - Re-run `./install.sh` to re-register the host
