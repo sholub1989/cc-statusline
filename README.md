@@ -8,91 +8,61 @@ A status bar for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) t
 
 **Line 2** — Claude subscription usage limits (5-hour and 7-day windows) with reset countdowns
 
-## How it works
-
-![How it works](assets/how-it-works.gif)
-
-Claude Code pipes session JSON to `statusline.sh` on every response. The script renders line 1 directly from that JSON (using `jq`).
-
-Line 2 pulls data from the Claude usage API (`claude.ai/api/organizations/.../usage`). This endpoint is protected by Cloudflare's managed challenge, so it can't be queried with plain `curl`. To surface what's already available to the user but in a much simpler way, a companion Chrome extension leverages the browser's existing authenticated session: `statusline.sh` connects to `host.py` over a Unix socket, which signals `background.js` to make the API request using the browser's cookies, then pipes the JSON response back through the chain.
-
-Fetches are **debounced** (max once per 5 seconds). During streaming responses, only the first statusline call triggers a real API fetch — the rest use cached data.
-
 ## Prerequisites
 
-**All installs**
-- macOS (Chrome native messaging paths are macOS-specific)
+- macOS
 - `jq` on `$PATH`
 
-**Full install (with usage data)**
-- Google Chrome — the extension must be installed in the **same browser profile** where you are logged into claude.ai and can view [claude.ai/settings/usage](https://claude.ai/settings/usage). It works by using that browser's existing authenticated session (cookies) — if you can see the usage page in that browser, the extension can access the same data
+**For Line 2 (usage data):**
+- Google Chrome logged into claude.ai (same profile where you can view [claude.ai/settings/usage](https://claude.ai/settings/usage))
 - `python3` on `$PATH`
 
 ## Setup
 
-![Install Guide](assets/install-guide.gif)
-
-### Quick install (curl one-liner)
-
 ```bash
-# Full install (with Chrome extension for usage data — Line 1 + Line 2)
+# Full install (Line 1 + Line 2 with usage data)
 curl -fsSL https://raw.githubusercontent.com/sholub1989/cc-statusline/master/install.sh | bash
 
-# Without Chrome extension (single-line: session info only — Line 1)
+# Without Chrome extension (Line 1 only)
 curl -fsSL https://raw.githubusercontent.com/sholub1989/cc-statusline/master/install.sh | bash -s -- --no-chrome-extension
 ```
 
-The full install downloads all files to `~/.claude/extensions/cc-statusline/`, registers the native messaging host, and configures Claude Code. Then load the Chrome extension — the installer prints the exact steps, but in short:
+After the full install, load the Chrome extension:
 
 ```bash
 open ~/.claude/extensions/cc-statusline
 ```
 
 1. Open `chrome://extensions` and enable **Developer mode** (top-right toggle)
-2. Drag the `cc-statusline` folder from Finder onto the `chrome://extensions` page
+2. Drag the `cc-statusline` folder onto the `chrome://extensions` page
 
-> **Important:** Load the extension into the **same Chrome profile** where you are logged into claude.ai. The extension uses that browser's existing authenticated session — no separate login needed.
+> Load the extension in the **same Chrome profile** where you're logged into claude.ai.
 
-3. Open a Claude Code session — you should see the statusline
+3. Open a Claude Code session — the statusline should appear
 
-> The Chrome extension loading steps above apply to the full install only.
-
-### Developer install (git clone)
+### Developer install
 
 ```bash
 git clone https://github.com/sholub1989/cc-statusline.git
 cd cc-statusline
-
-# Full install (with Chrome extension for usage data — Line 1 + Line 2)
-./install.sh
-
-# Without Chrome extension (single-line: session info only — Line 1)
-./install.sh --no-chrome-extension
+./install.sh                        # full install
+./install.sh --no-chrome-extension  # Line 1 only
 ```
-
-The installer copies extension files to `~/.claude/extensions/cc-statusline/` and prints the drag-and-drop instructions (full install only).
-
-> **Note:** If you move the cloned repo, re-run `./install.sh` to update paths.
 
 ## Troubleshooting
 
 **Line 2 doesn't appear**
 - Check `chrome://extensions` for errors on the extension
-- Open the service worker console and look for error messages
-- Verify `ls /tmp/claude-usage.sock` exists (created when the extension loads)
-- Make sure the extension is installed in the **same Chrome profile** where you're logged into claude.ai — if you can view [claude.ai/settings/usage](https://claude.ai/settings/usage) in that browser, the extension can access the same data
+- Verify `ls /tmp/claude-usage.sock` exists
+- Make sure the extension is in the same Chrome profile as your claude.ai login
 
-**"Native host disconnected" in service worker console**
-- Re-run `./install.sh` to re-register the host
-- Reload the extension in `chrome://extensions`
+**"Native host disconnected"**
+- Re-run `./install.sh` and reload the extension in `chrome://extensions`
 
 **Usage data is stale**
-- The statusline only fetches when Claude Code renders it (on each response)
-- Data is debounced to 5-second intervals — this is intentional to avoid overloading the API
+- Data is debounced to 5-second intervals — this is intentional
 
 ## Uninstall
-
-From the repo (or wherever you have the script):
 
 ```bash
 ./uninstall.sh
