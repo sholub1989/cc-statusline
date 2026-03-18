@@ -86,6 +86,7 @@ fi
 if [ "$MODE" = "remote" ]; then
     echo ""
     echo "Downloading files..."
+    mkdir -p "$INSTALL_DIR"
     # source path in repo → destination filename (flat)
     if [ "$INSTALL_CHROME_EXTENSION" = true ]; then
         FILES=(
