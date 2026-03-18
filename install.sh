@@ -17,7 +17,10 @@ for arg in "$@"; do
 done
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-# Deterministic extension ID derived from the "key" in manifest.json
+# When run via sudo, install to the real user's home, not root's
+if [ -n "${SUDO_USER:-}" ]; then
+    HOME="$(eval echo "~$SUDO_USER")"
+fi
 EXT_ID="onppaomicbkdjhmkmheojgkifbmhehpc"
 GITHUB_RAW="https://raw.githubusercontent.com/sholub1989/cc-statusline/master"
 INSTALL_DIR="$HOME/.claude/extensions/cc-statusline"
