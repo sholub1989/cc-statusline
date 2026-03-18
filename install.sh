@@ -107,7 +107,7 @@ if [ "$MODE" = "remote" ]; then
     for entry in "${FILES[@]}"; do
         SRC="${entry%%:*}"
         DST="${entry##*:}"
-        if curl -fsSL "$GITHUB_RAW/$SRC" -o "$INSTALL_DIR/$DST"; then
+        if curl -fsSL "$GITHUB_RAW/$SRC" -o "$INSTALL_DIR/$DST" </dev/null; then
             echo "  ✓ $DST"
         else
             echo "  ✗ Failed to download $SRC"
