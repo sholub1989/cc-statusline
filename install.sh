@@ -48,13 +48,16 @@ if [ "$INSTALL_CHROME_EXTENSION" = true ]; then
     fi
 
     # Chrome
+    CHROME_APP="/Applications/Google Chrome.app"
+    CHROME_APP_USER="$HOME/Applications/Google Chrome.app"
     CHROME_SUPPORT="$HOME/Library/Application Support/Google/Chrome"
-    if [ ! -d "$CHROME_SUPPORT" ]; then
-        echo "✗ Chrome not found (no $CHROME_SUPPORT)"
+    if [ -d "$CHROME_APP" ] || [ -d "$CHROME_APP_USER" ] || [ -d "$CHROME_SUPPORT" ]; then
+        echo "✓ Chrome found"
+    else
+        echo "✗ Chrome not found"
+        echo "  Checked: $CHROME_APP, $CHROME_APP_USER, $CHROME_SUPPORT"
         echo "  Install Chrome from https://google.com/chrome"
         ERRORS=$((ERRORS + 1))
-    else
-        echo "✓ Chrome found"
     fi
 fi
 
