@@ -1,7 +1,6 @@
 #!/bin/bash
 input=$(cat)
 
-# ANSI Colors
 CYAN='\033[1;36m'
 MAGENTA='\033[1;35m'
 GREEN='\033[32m'
@@ -9,12 +8,10 @@ RED='\033[31m'
 DIM='\033[2m'
 R='\033[0m'
 
-# Format number with space as thousands separator
 format_num() {
     printf "%d" "$1" | rev | sed 's/.\{3\}/& /g' | rev | sed 's/^ //'
 }
 
-# Extract all values from JSON in a single jq call
 eval $(echo "$input" | jq -r '
     @sh "SESSION_ID=\(.session_id // "default")",
     @sh "MODEL=\(.model.display_name // "Unknown")",
@@ -23,21 +20,23 @@ eval $(echo "$input" | jq -r '
     @sh "COST=\(.cost.total_cost_usd // 0)",
     @sh "INPUT_TOKENS=\(.context_window.current_usage.input_tokens // -1)",
     @sh "CACHE_CREATE=\(.context_window.current_usage.cache_creation_input_tokens // 0)",
-    @sh "CACHE_READ=\(.context_window.current_usage.cache_read_input_tokens // 0)"
+    @sh "CACHE_READ=\(.context_window.current_usage.cache_read_input_tokens // 0)",
+    @sh "RL_5H_PCT=\(.rate_limits.five_hour.used_percentage // "")",
+    @sh "RL_5H_RESET=\(.rate_limits.five_hour.resets_at // "")",
+    @sh "RL_7D_PCT=\(.rate_limits.seven_day.used_percentage // "")",
+    @sh "RL_7D_RESET=\(.rate_limits.seven_day.resets_at // "")"
 ' | tr '\n' ' ')
 
-# Extract last two path components
 if [ -n "$CWD" ]; then
     PROJECT_PATH="/$(echo "$CWD" | rev | cut -d'/' -f1-2 | rev)"
 else
     PROJECT_PATH=""
 fi
 
-# Cache file for context tokens (per-session)
 STATUSLINE_DIR="$HOME/.claude/extensions/cc-statusline"
 CACHE_FILE="$STATUSLINE_DIR/ctx-cache-${SESSION_ID}"
 
-# Context tokens — round to nearest 100 to avoid flicker
+# Round to nearest 100 to avoid flicker
 if [ "$INPUT_TOKENS" -ge 0 ] 2>/dev/null; then
     CTX_RAW=$((INPUT_TOKENS + CACHE_CREATE + CACHE_READ))
     CTX_TOKENS=$(( (CTX_RAW + 50) / 100 * 100 ))
@@ -52,7 +51,6 @@ else
     fi
 fi
 
-# Context percentage
 if [ "$CTX_SIZE" -gt 0 ] && [ "$CTX_TOKENS" -gt 0 ]; then
     CTX_PERCENT=$(awk "BEGIN {printf \"%.1f\", ($CTX_TOKENS / $CTX_SIZE) * 100}")
 else
@@ -62,12 +60,10 @@ fi
 COST_FMT=$(printf "%.2f" "$COST")
 CTX_FMT=$(format_num $CTX_TOKENS)
 
-# Git branch and shortstat
-BRANCH="N/A"
+BRANCH=$(git branch --show-current 2>/dev/null || echo "N/A")
 ADDED=0
 REMOVED=0
-if git rev-parse --git-dir >/dev/null 2>&1; then
-    BRANCH=$(git branch --show-current 2>/dev/null || echo "N/A")
+if [ "$BRANCH" != "N/A" ]; then
     SHORTSTAT=$(git diff --shortstat HEAD 2>/dev/null)
     if [ -n "$SHORTSTAT" ]; then
         ADDED=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+')
@@ -77,61 +73,40 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
     fi
 fi
 
-# Line 1
 echo -e "${CYAN}${MODEL}${R} ${DIM}|${R} ${PROJECT_PATH} ${DIM}|${R} ${MAGENTA}${BRANCH}${R} ${DIM}|${R} ${GREEN}+${ADDED}${R} ${RED}-${REMOVED}${R} ${DIM}|${R} Ctx: ${CYAN}${CTX_PERCENT}%${R} ${DIM}(${CTX_FMT})${R} ${DIM}|${R} Cost: ${CYAN}\$${COST_FMT}${R}"
 
-# Line 2: usage data from socket (requires Chrome extension)
-if [ ! -f "$STATUSLINE_DIR/.no-chrome-extension" ]; then
-    LINE2=$(python3 -c "
-import json, socket, datetime
+if [ -n "$RL_5H_PCT" ] || [ -n "$RL_7D_PCT" ]; then
+    LINE2=""
 
-SOCK = '/tmp/claude-usage.sock'
-R = '\033[0m'
-CYAN = '\033[1;36m'
-DIM = '\033[2m'
-
-s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-s.settimeout(2)
-try:
-    s.connect(SOCK)
-    raw = b''
-    while True:
-        chunk = s.recv(4096)
-        if not chunk:
-            break
-        raw += chunk
-finally:
-    s.close()
-
-d = json.loads(raw)
-
-fh = d.get('five_hour', {}) or {}
-fh_pct = fh.get('utilization', 0) or 0
-fh_reset = fh.get('resets_at', '')
-if fh_reset:
-    dt = datetime.datetime.fromisoformat(fh_reset)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    diff = max((dt - now).total_seconds(), 0)
-    hrs = int(diff // 3600)
-    mins = int((diff % 3600) // 60)
-    fh_str = f'{CYAN}{fh_pct}%{R} {hrs}h {mins}m'
-else:
-    fh_str = f'{CYAN}{fh_pct}%{R}'
-
-sd = d.get('seven_day', {}) or {}
-sd_pct = sd.get('utilization', 0) or 0
-sd_reset = sd.get('resets_at', '')
-if sd_reset:
-    dt = datetime.datetime.fromisoformat(sd_reset)
-    local_dt = dt.astimezone()
-    sd_time = local_dt.strftime('%a %-I:%M %p')
-    sd_str = f'{CYAN}{sd_pct}%{R} {sd_time}'
-else:
-    sd_str = f'{CYAN}{sd_pct}%{R}'
-
-print(f'{fh_str} {DIM}|{R} {sd_str}')
-" 2>/dev/null)
-    if [ -n "$LINE2" ]; then
-        echo -e "$LINE2"
+    if [ -n "$RL_5H_PCT" ]; then
+        RL_5H_PCT=$(printf "%.0f" "$RL_5H_PCT")
+        FH_STR="${CYAN}${RL_5H_PCT}%${R}"
+        if [ -n "$RL_5H_RESET" ]; then
+            NOW=$(date +%s)
+            DIFF=$((RL_5H_RESET - NOW))
+            [ "$DIFF" -lt 0 ] && DIFF=0
+            HRS=$((DIFF / 3600))
+            MINS=$(( (DIFF % 3600) / 60 ))
+            FH_STR="${FH_STR} ${HRS}h ${MINS}m"
+        fi
+        LINE2="$FH_STR"
     fi
+
+    if [ -n "$RL_7D_PCT" ]; then
+        RL_7D_PCT=$(printf "%.0f" "$RL_7D_PCT")
+        SD_STR="${CYAN}${RL_7D_PCT}%${R}"
+        if [ -n "$RL_7D_RESET" ]; then
+            SD_DATE=$(date -r "$RL_7D_RESET" "+%a %-I:%M %p" 2>/dev/null || date -d "@$RL_7D_RESET" "+%a %-I:%M %p" 2>/dev/null || echo "")
+            if [ -n "$SD_DATE" ]; then
+                SD_STR="${SD_STR} ${SD_DATE}"
+            fi
+        fi
+        if [ -n "$LINE2" ]; then
+            LINE2="${LINE2} ${DIM}|${R} ${SD_STR}"
+        else
+            LINE2="$SD_STR"
+        fi
+    fi
+
+    echo -e "$LINE2"
 fi

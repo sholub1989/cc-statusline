@@ -1,19 +1,9 @@
 #!/bin/bash
-# Uninstalls Claude Code statusline: removes native messaging host,
-# installed files, and Claude Code settings.
+# Uninstalls Claude Code statusline: removes installed files and Claude Code settings.
 
 set -euo pipefail
 
 echo "Uninstalling cc-statusline..."
-
-# Remove native messaging host manifest
-NMH="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.claude.usage.json"
-if [ -f "$NMH" ]; then
-    rm "$NMH"
-    echo "✓ Removed native messaging host manifest"
-else
-    echo "- Native messaging host manifest already removed"
-fi
 
 # Remove installed files
 if [ -d "$HOME/.claude/extensions/cc-statusline" ]; then
@@ -44,11 +34,5 @@ else
     echo "- Skipped settings.json (file missing or jq not found)"
 fi
 
-# Remove Unix socket if present
-if [ -e "/tmp/claude-usage.sock" ]; then
-    rm "/tmp/claude-usage.sock"
-    echo "✓ Removed /tmp/claude-usage.sock"
-fi
-
 echo ""
-echo "Done! Now remove the extension from chrome://extensions."
+echo "Done!"
