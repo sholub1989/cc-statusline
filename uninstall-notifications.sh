@@ -21,29 +21,36 @@ else
     echo "- ~/.claude/extensions/cc-notifications/ already removed"
 fi
 
-# Remove symlink
-if [ -L "$HOME/.claude/scripts/notify.sh" ] || [ -f "$HOME/.claude/scripts/notify.sh" ]; then
-    rm "$HOME/.claude/scripts/notify.sh"
-    echo "✓ Removed ~/.claude/scripts/notify.sh"
-else
-    echo "- ~/.claude/scripts/notify.sh already removed"
-fi
+# Remove symlinks
+for script in notify.sh dismiss.sh; do
+    if [ -L "$HOME/.claude/scripts/$script" ] || [ -f "$HOME/.claude/scripts/$script" ]; then
+        rm "$HOME/.claude/scripts/$script"
+        echo "✓ Removed ~/.claude/scripts/$script"
+    else
+        echo "- ~/.claude/scripts/$script already removed"
+    fi
+done
 
 # Remove only notification hooks from settings.json (preserve other hooks)
 SETTINGS="$HOME/.claude/settings.json"
 NOTIFY_CMD="~/.claude/scripts/notify.sh"
+DISMISS_CMD="~/.claude/scripts/dismiss.sh"
 if [ -f "$SETTINGS" ] && command -v jq &>/dev/null; then
     if jq -e '.hooks' "$SETTINGS" >/dev/null 2>&1; then
         TMP=$(mktemp)
-        jq --arg cmd "$NOTIFY_CMD" '
-            (.hooks.Stop // []) |= map(select(.hooks | all(.command != $cmd))) |
-            (.hooks.PermissionRequest // []) |= map(select(.hooks | all(.command != $cmd))) |
-            (.hooks.Elicitation // []) |= map(select(.hooks | all(.command != $cmd))) |
-            (.hooks.Notification // []) |= map(select(.hooks | all(.command != $cmd))) |
+        jq --arg notify "$NOTIFY_CMD" --arg dismiss "$DISMISS_CMD" '
+            (.hooks.Stop // []) |= map(select(.hooks | all(.command != $notify))) |
+            (.hooks.PermissionRequest // []) |= map(select(.hooks | all(.command != $notify))) |
+            (.hooks.Elicitation // []) |= map(select(.hooks | all(.command != $notify))) |
+            (.hooks.Notification // []) |= map(select(.hooks | all(.command != $notify))) |
+            (.hooks.UserPromptSubmit // []) |= map(select(.hooks | all(.command != $dismiss))) |
+            (.hooks.PostToolUse // []) |= map(select(.hooks | all(.command != $dismiss))) |
             if .hooks.Stop == [] then del(.hooks.Stop) else . end |
             if .hooks.PermissionRequest == [] then del(.hooks.PermissionRequest) else . end |
             if .hooks.Elicitation == [] then del(.hooks.Elicitation) else . end |
             if .hooks.Notification == [] then del(.hooks.Notification) else . end |
+            if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end |
+            if .hooks.PostToolUse == [] then del(.hooks.PostToolUse) else . end |
             if .hooks == {} then del(.hooks) else . end
         ' "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
         echo "✓ Removed notification hooks from settings.json"
@@ -54,8 +61,8 @@ else
     echo "- Skipped settings.json (file missing or jq not found)"
 fi
 
-# Remove lockfile
-rm -f /tmp/claude-notify.lock
+# Remove temp files
+rm -rf /tmp/claude-notify /tmp/claude-notify-active
 
 echo ""
 echo "Done!"

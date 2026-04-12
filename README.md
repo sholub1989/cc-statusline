@@ -52,13 +52,21 @@ Native macOS notifications when Claude Code needs your attention — visible on 
 |---|---|
 | ![complete](assets/notification-complete.png) | ![permission](assets/notification-permission.png) |
 
-Shows the project name so you know which session needs you. Covers all events where Claude is waiting:
+Shows the project name so you know which session needs you.
+
+**Events covered:**
 
 | Event | Notification |
 |---|---|
 | Task complete / question | `Claude Code ✅` |
 | Permission prompt (Bash, file edit, etc.) | `Claude Code 🔄` |
 | MCP server input request | `Claude Code 💬` |
+
+**Smart lifecycle:**
+
+- New notifications replace old ones for the same project (no stacking)
+- Notifications auto-dismiss when you interact — approve a permission, send a message, or use any tool
+- Duplicate notifications are debounced (5-second window for consecutive Stop events)
 
 ### Prerequisites
 

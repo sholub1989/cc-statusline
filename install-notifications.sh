@@ -67,7 +67,7 @@ mkdir -p "$INSTALL_DIR"
 
 if [ "$MODE" = "remote" ]; then
     echo "Downloading files..."
-    for f in ClaudeNotify.swift notify.sh assets/AppIcon.icns; do
+    for f in ClaudeNotify.swift notify.sh dismiss.sh assets/AppIcon.icns; do
         target="$INSTALL_DIR/$(basename "$f")"
         if curl -fsSL "$GITHUB_RAW/$f" > "$target"; then
             echo "  ✓ $(basename "$f")"
@@ -79,11 +79,12 @@ if [ "$MODE" = "remote" ]; then
 elif [ "$MODE" = "local" ]; then
     cp "$REPO_DIR/ClaudeNotify.swift" "$INSTALL_DIR/"
     cp "$REPO_DIR/notify.sh" "$INSTALL_DIR/"
+    cp "$REPO_DIR/dismiss.sh" "$INSTALL_DIR/"
     cp "$REPO_DIR/assets/AppIcon.icns" "$INSTALL_DIR/"
     echo "✓ Copied files to $INSTALL_DIR"
 fi
 
-chmod +x "$INSTALL_DIR/notify.sh"
+chmod +x "$INSTALL_DIR/notify.sh" "$INSTALL_DIR/dismiss.sh"
 
 # ── Build app bundle ────────────────────────────────────────────────────────
 echo ""
@@ -141,10 +142,12 @@ else
     echo "⚠ Launch Services registration failed (icon may not appear)"
 fi
 
-# ── Symlink notify.sh ───────────────────────────────────────────────────────
+# ── Symlink scripts ────────────────────────────────────────────────────────
 mkdir -p "$HOME/.claude/scripts"
 ln -sf "$INSTALL_DIR/notify.sh" "$HOME/.claude/scripts/notify.sh"
+ln -sf "$INSTALL_DIR/dismiss.sh" "$HOME/.claude/scripts/dismiss.sh"
 echo "✓ Symlinked notify.sh → ~/.claude/scripts/notify.sh"
+echo "✓ Symlinked dismiss.sh → ~/.claude/scripts/dismiss.sh"
 
 # ── Configure Claude Code hooks ─────────────────────────────────────────────
 SETTINGS="$HOME/.claude/settings.json"
@@ -182,18 +185,42 @@ HOOKS_FRAGMENT='{
         }
       ]
     }
+  ],
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/scripts/dismiss.sh"
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/scripts/dismiss.sh"
+        }
+      ]
+    }
   ]
 }'
 
 if [ -f "$SETTINGS" ]; then
     TMP=$(mktemp)
-    echo "$HOOKS_FRAGMENT" | jq -s --arg cmd "~/.claude/scripts/notify.sh" '
-        def dedup($key; $new): ((.hooks[$key] // []) | map(select(.hooks | all(.command != $cmd)))) + $new[$key];
+    echo "$HOOKS_FRAGMENT" | jq -s --arg notify "~/.claude/scripts/notify.sh" --arg dismiss "~/.claude/scripts/dismiss.sh" '
+        def dedup($key; $cmd; $new): ((.hooks[$key] // []) | map(select(.hooks | all(.command != $cmd)))) + $new[$key];
         .[0] as $new | input |
         .hooks = (.hooks // {}) |
-        .hooks.Stop = dedup("Stop"; $new) |
-        .hooks.PermissionRequest = dedup("PermissionRequest"; $new) |
-        .hooks.Elicitation = dedup("Elicitation"; $new)
+        .hooks.Stop = dedup("Stop"; $notify; $new) |
+        .hooks.PermissionRequest = dedup("PermissionRequest"; $notify; $new) |
+        .hooks.Elicitation = dedup("Elicitation"; $notify; $new) |
+        .hooks.UserPromptSubmit = dedup("UserPromptSubmit"; $dismiss; $new) |
+        .hooks.PostToolUse = dedup("PostToolUse"; $dismiss; $new)
     ' - "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
     echo "✓ Updated Claude Code hooks in settings.json"
 else
