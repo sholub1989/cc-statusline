@@ -28,5 +28,4 @@ case "$EVENT" in
     *)                 TITLE="Claude Code ✅" ;;
 esac
 
-echo "$PROJECT" > /tmp/claude-notify-active
 "$NOTIFY" "$TITLE" "$PROJECT" --sound

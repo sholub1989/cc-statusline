@@ -207,6 +207,28 @@ HOOKS_FRAGMENT='{
         }
       ]
     }
+  ],
+  "PreCompact": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/scripts/dismiss.sh"
+        }
+      ]
+    }
+  ],
+  "PostCompact": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "~/.claude/scripts/notify.sh"
+        }
+      ]
+    }
   ]
 }'
 
@@ -220,7 +242,9 @@ if [ -f "$SETTINGS" ]; then
         .hooks.PermissionRequest = dedup("PermissionRequest"; $notify; $new) |
         .hooks.Elicitation = dedup("Elicitation"; $notify; $new) |
         .hooks.UserPromptSubmit = dedup("UserPromptSubmit"; $dismiss; $new) |
-        .hooks.PostToolUse = dedup("PostToolUse"; $dismiss; $new)
+        .hooks.PostToolUse = dedup("PostToolUse"; $dismiss; $new) |
+        .hooks.PreCompact = dedup("PreCompact"; $dismiss; $new) |
+        .hooks.PostCompact = dedup("PostCompact"; $notify; $new)
     ' - "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
     echo "✓ Updated Claude Code hooks in settings.json"
 else

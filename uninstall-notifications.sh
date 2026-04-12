@@ -45,12 +45,16 @@ if [ -f "$SETTINGS" ] && command -v jq &>/dev/null; then
             (.hooks.Notification // []) |= map(select(.hooks | all(.command != $notify))) |
             (.hooks.UserPromptSubmit // []) |= map(select(.hooks | all(.command != $dismiss))) |
             (.hooks.PostToolUse // []) |= map(select(.hooks | all(.command != $dismiss))) |
+            (.hooks.PreCompact // []) |= map(select(.hooks | all(.command != $dismiss))) |
+            (.hooks.PostCompact // []) |= map(select(.hooks | all(.command != $notify))) |
             if .hooks.Stop == [] then del(.hooks.Stop) else . end |
             if .hooks.PermissionRequest == [] then del(.hooks.PermissionRequest) else . end |
             if .hooks.Elicitation == [] then del(.hooks.Elicitation) else . end |
             if .hooks.Notification == [] then del(.hooks.Notification) else . end |
             if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end |
             if .hooks.PostToolUse == [] then del(.hooks.PostToolUse) else . end |
+            if .hooks.PreCompact == [] then del(.hooks.PreCompact) else . end |
+            if .hooks.PostCompact == [] then del(.hooks.PostCompact) else . end |
             if .hooks == {} then del(.hooks) else . end
         ' "$SETTINGS" > "$TMP" && mv "$TMP" "$SETTINGS"
         echo "✓ Removed notification hooks from settings.json"
@@ -62,7 +66,7 @@ else
 fi
 
 # Remove temp files
-rm -rf /tmp/claude-notify /tmp/claude-notify-active
+rm -rf /tmp/claude-notify
 
 echo ""
 echo "Done!"
