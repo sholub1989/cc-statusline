@@ -33,7 +33,7 @@ else
     PROJECT_PATH=""
 fi
 
-STATUSLINE_DIR="$HOME/.claude/extensions/cc-statusline"
+STATUSLINE_DIR="$HOME/.claude/extensions/cc-setup"
 CACHE_FILE="$STATUSLINE_DIR/ctx-cache-${SESSION_ID}"
 
 # Round to nearest 100 to avoid flicker

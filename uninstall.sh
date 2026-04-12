@@ -3,14 +3,14 @@
 
 set -euo pipefail
 
-echo "Uninstalling cc-statusline..."
+echo "Uninstalling cc-setup..."
 
 # Remove installed files
-if [ -d "$HOME/.claude/extensions/cc-statusline" ]; then
-    rm -rf "$HOME/.claude/extensions/cc-statusline"
-    echo "✓ Removed ~/.claude/extensions/cc-statusline/"
+if [ -d "$HOME/.claude/extensions/cc-setup" ]; then
+    rm -rf "$HOME/.claude/extensions/cc-setup"
+    echo "✓ Removed ~/.claude/extensions/cc-setup/"
 else
-    echo "- ~/.claude/extensions/cc-statusline/ already removed"
+    echo "- ~/.claude/extensions/cc-setup/ already removed"
 fi
 
 if [ -L "$HOME/.claude/statusline.sh" ] || [ -f "$HOME/.claude/statusline.sh" ]; then

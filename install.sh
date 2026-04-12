@@ -11,8 +11,8 @@ set -euo pipefail
 if [ -n "${SUDO_USER:-}" ]; then
     HOME="$(eval echo "~$SUDO_USER")"
 fi
-GITHUB_RAW="https://raw.githubusercontent.com/sholub1989/cc-statusline/master"
-INSTALL_DIR="$HOME/.claude/extensions/cc-statusline"
+GITHUB_RAW="https://raw.githubusercontent.com/sholub1989/cc-setup/master"
+INSTALL_DIR="$HOME/.claude/extensions/cc-setup"
 
 # ── Detect install mode ──────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo "")"
